@@ -1,0 +1,21 @@
+{
+    "name": "Parroter",
+    "version": "0.1",
+    "manifest_version": 2,
+    "description": "Simple, automated privacy policy analysis",
+    "background" : {
+        "scripts": ["background.js"]
+    },
+    "page_action" : {
+        "default_title" : "This site can't sell you're info!"
+    },
+    "content_scripts": [
+        {
+            "matches": ["http://*/privacy"],
+            "js": ["content_script.js"]
+        }
+    ],
+    "permissions": [
+        "tabs", "http://*/*"
+    ]
+}
