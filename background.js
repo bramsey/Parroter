@@ -1,5 +1,5 @@
 var dataStore, NOSELL_TRAINING_DATA, SELL_TRAINING_DATA,
-    BANKRUPT_TRAINING_DATA, initializeDataStore, onRequest;
+    BANKRUPT_TRAINING_DATA, initializeDataStore, onRequest, train;
 
 NOSELL_TRAINING_DATA = "Sharing and finding you on Facebook\nGet to know the privacy settings that help you control your information on facebook.com.\nIf you have questions or complaints regarding our privacy policy or practices, please contact us by mail at 1601 S. California Avenue, Palo Alto, CA 94304 or through this help page.\nted ted.com We will never sell your data to any third party\nWe never sell or rent your personal data, and do not link browsing information or personal data from our server logs to any other personal data that you might submit to us, for example as a registered user of the SoundCloud platform\nWe will never sell, rent or give away private data about you or your contacts. Our business is in making your inbox more powerful, not in selling databases.\nAt Avidity Group, LLC we will NEVER sell your personal information to a third party. We use this information to accommodate your interests in our products and services.\nWe will not sell or rent this information to anyone\nWe value your privacy. We never sell your information to data miners, information database compilation companies, or third parties trying to market to you.\nWe may display advertising on our site, but we will never share Your Data with advertisers or with third parties that display advertising on our behalf\nWe never sell your data to others\nWhile we promise to never share or sell your data to other organizations, there are a few instances where we may have to provide it to other entities. The only situations where we will share your personal information are under the following, very limited circumstances:\nWe never rent or sell your personal data.\nWe do not sell your Personal Information to anyone for any purpose. Period.\nSimply put, we do not and will not sell or rent your personal information to anyone, for any reason, at any time.\nCodecademy will not rent or sell potentially personally-identifying and personally-identifying information to anyone.\nYour email address, payment information, address, and other private account data will never be sold or distributed to third parties except as required to provide you service.\nWe do not sell, trade, or otherwise transfer to outside parties your personally identifiable information.\nWe do not release, sell, or expose any Personally Identifiable Information that you provide us to third parties for marketing purposes\nIt is our policy not to share, sell or rent your personal information to any company not directly related to PageLever as a provider or customer.\nWe will not publish, share, or sell your email address in any way. We hate spam just as much as you do and will not spam your email. We may occasionally send you email to notify you of any important security or software updates to Picplum.com.\nFluency Forums Corporation does not rent, sell or share personal information it collects about you to or with marketers. Information collected from you is only used to complete and support your purchases from and use of the Fluency Forums Corporation Site and to comply with any requirements of law. \ndoes not sell, trade or rent Personal Information collected through the Vidyard Properties to any third party\ndoes not collect or share personal information\nWe don't send you unsolicited communications for marketing purposes.\nnor will such information be sold or otherwise transferred to unaffiliated third parties without the approval of the user at the time of collection\nWikimedia policy does not permit distribution of personally identifiable information under any circumstances.\nMicrosoft will not sell, lease or rent its e-mail subscriber lists to third parties.\nwe do not sell, rent, exchange, or otherwise disclose this information to persons or organizations outside the Executive Office of the President.\nFrom time to time, EFF may work with third-party consultants or other service providers who may have access to personally identifiable information. In such cases, we will restrict their use of personally identifiable information in accordance with their assigned tasks and subject to the limitations of this privacy policy.\nWhen we do this, we do not give that business your name and e-mail address.\nWe will not collect personal information about you just because you visit this Internet site. There are applications on this website that provide you with the opportunity to order forms, ask questions requiring a response, sign up for electronic newsletters, participate in focus groups and customer surveys, or learn the status of filed returns or anticipated payments. Using these services is voluntary and may require that you provide additional personal information to us. Providing the requested information implies your consent for us to use this data in order to respond to your specific request.\nWe do not sell, rent, or otherwise provide your personal information to outside marketers. You will only receive marketing about products and services of the Postal Service or its partners\nthe Department does not collect PII about you when you visit our website, unless you choose to provide such information to us. Submitting PII through our website is voluntary. By doing so, you are giving the Department your permission to use the information for the stated purpose\nWith other business partners with your consent;In aggregated or other non-personally identifiable form;\nWe may also share with third parties aggregated, non-personal information, such as the number of new user registrations over a specific time period or the number of users who edited a particular wiki. \nWe will not provide or sell your personal information to third parties.\nWe will not sell your information to third parties.\nWe extensively secure and limit access to your information.\nwill never share your name, email addresses, phone numbers, geolocation data, or voice recordings with third-parties, other than those required to facilitate the service\nis the sole owner of this information and we will not sell, share, or rent this information with any other company or individual in ways different from what is disclosed in this statement.\ndoes not share, sell, rent, or trade any information provided with third parties for their promotional purposes."
 
@@ -16,8 +16,27 @@ initializeDataStore = function() {
            'BANKRUPT': 0
         }
     };
-}
+};
 
+train = function(data, label) {
+    var words = data.split(/[\s\n;".,;:()<>[\]\\]+/), i, l, word;
+
+    for (i=0, l=words.length; i<l; i++) {
+        word = words[i];
+
+        // initialize word.
+        dataStore.words[word] = dataStore.words[word] || {
+            'NOSELL': 0,
+            'SELL': 0,
+            'BANKRUPT': 0
+        };
+
+        dataStore.words[word][label] += 1;
+        dataStore.labels[label] += 1;
+    }
+};
+
+// Event handler for chrome requests.
 onRequest = function(request, sender, sendResponse) {
     var tabID = sender.tab.id;
 
