@@ -3,4 +3,6 @@
 
 var bodyText = document.body.innerText;
 
-chrome.extension.sendRequest({bodyText: bodyText}, function(response) {});
+chrome.extension.sendMessage({bodyText: bodyText}, function(response) {
+    console.log(response);
+});

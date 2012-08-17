@@ -118,7 +118,7 @@ classify = function(data) {
 })();
 
 // Event handler for chrome requests.
-onRequest = function(request, sender, sendResponse) {
+onMessage = function(request, sender, sendResponse) {
     var tabID = sender.tab.id,
         classification = classify(request.bodyText);
 
@@ -136,8 +136,8 @@ onRequest = function(request, sender, sendResponse) {
     chrome.pageAction.show(tabID);
 
     // Return nothing to let the connection be cleaned up.
-    sendResponse({});
+    sendResponse({classification: classification});
 };
 
 // Listen for the content script to send a message to the background page.
-chrome.extension.onRequest.addListener(onRequest);
+chrome.extension.onMessage.addListener(onMessage);
