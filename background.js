@@ -1,5 +1,9 @@
-var dataStore, NOSELL_TRAINING_DATA, SELL_TRAINING_DATA,
-    BANKRUPT_TRAINING_DATA, initializeDataStore, onRequest, train;
+var dataStore, NOSELL_TRAINING_DATA, SELL_TRAINING_DATA, BANKRUPT_TRAINING_DATA,
+    initializeDataStore, onRequest, train, classify, splitWords, LABELS,
+    initializeWordInDatastore, getProbabilityForLabel, maxLabelIndex,
+    getProbabilityOfWordGivenLabel, combineProbabilitiesIntoMAP;
+
+LABELS = ['NOSELL', 'SELL', 'BANKRUPT'];
 
 NOSELL_TRAINING_DATA = "Sharing and finding you on Facebook\nGet to know the privacy settings that help you control your information on facebook.com.\nIf you have questions or complaints regarding our privacy policy or practices, please contact us by mail at 1601 S. California Avenue, Palo Alto, CA 94304 or through this help page.\nted ted.com We will never sell your data to any third party\nWe never sell or rent your personal data, and do not link browsing information or personal data from our server logs to any other personal data that you might submit to us, for example as a registered user of the SoundCloud platform\nWe will never sell, rent or give away private data about you or your contacts. Our business is in making your inbox more powerful, not in selling databases.\nAt Avidity Group, LLC we will NEVER sell your personal information to a third party. We use this information to accommodate your interests in our products and services.\nWe will not sell or rent this information to anyone\nWe value your privacy. We never sell your information to data miners, information database compilation companies, or third parties trying to market to you.\nWe may display advertising on our site, but we will never share Your Data with advertisers or with third parties that display advertising on our behalf\nWe never sell your data to others\nWhile we promise to never share or sell your data to other organizations, there are a few instances where we may have to provide it to other entities. The only situations where we will share your personal information are under the following, very limited circumstances:\nWe never rent or sell your personal data.\nWe do not sell your Personal Information to anyone for any purpose. Period.\nSimply put, we do not and will not sell or rent your personal information to anyone, for any reason, at any time.\nCodecademy will not rent or sell potentially personally-identifying and personally-identifying information to anyone.\nYour email address, payment information, address, and other private account data will never be sold or distributed to third parties except as required to provide you service.\nWe do not sell, trade, or otherwise transfer to outside parties your personally identifiable information.\nWe do not release, sell, or expose any Personally Identifiable Information that you provide us to third parties for marketing purposes\nIt is our policy not to share, sell or rent your personal information to any company not directly related to PageLever as a provider or customer.\nWe will not publish, share, or sell your email address in any way. We hate spam just as much as you do and will not spam your email. We may occasionally send you email to notify you of any important security or software updates to Picplum.com.\nFluency Forums Corporation does not rent, sell or share personal information it collects about you to or with marketers. Information collected from you is only used to complete and support your purchases from and use of the Fluency Forums Corporation Site and to comply with any requirements of law. \ndoes not sell, trade or rent Personal Information collected through the Vidyard Properties to any third party\ndoes not collect or share personal information\nWe don't send you unsolicited communications for marketing purposes.\nnor will such information be sold or otherwise transferred to unaffiliated third parties without the approval of the user at the time of collection\nWikimedia policy does not permit distribution of personally identifiable information under any circumstances.\nMicrosoft will not sell, lease or rent its e-mail subscriber lists to third parties.\nwe do not sell, rent, exchange, or otherwise disclose this information to persons or organizations outside the Executive Office of the President.\nFrom time to time, EFF may work with third-party consultants or other service providers who may have access to personally identifiable information. In such cases, we will restrict their use of personally identifiable information in accordance with their assigned tasks and subject to the limitations of this privacy policy.\nWhen we do this, we do not give that business your name and e-mail address.\nWe will not collect personal information about you just because you visit this Internet site. There are applications on this website that provide you with the opportunity to order forms, ask questions requiring a response, sign up for electronic newsletters, participate in focus groups and customer surveys, or learn the status of filed returns or anticipated payments. Using these services is voluntary and may require that you provide additional personal information to us. Providing the requested information implies your consent for us to use this data in order to respond to your specific request.\nWe do not sell, rent, or otherwise provide your personal information to outside marketers. You will only receive marketing about products and services of the Postal Service or its partners\nthe Department does not collect PII about you when you visit our website, unless you choose to provide such information to us. Submitting PII through our website is voluntary. By doing so, you are giving the Department your permission to use the information for the stated purpose\nWith other business partners with your consent;In aggregated or other non-personally identifiable form;\nWe may also share with third parties aggregated, non-personal information, such as the number of new user registrations over a specific time period or the number of users who edited a particular wiki. \nWe will not provide or sell your personal information to third parties.\nWe will not sell your information to third parties.\nWe extensively secure and limit access to your information.\nwill never share your name, email addresses, phone numbers, geolocation data, or voice recordings with third-parties, other than those required to facilitate the service\nis the sole owner of this information and we will not sell, share, or rent this information with any other company or individual in ways different from what is disclosed in this statement.\ndoes not share, sell, rent, or trade any information provided with third parties for their promotional purposes."
 
@@ -8,32 +12,101 @@ SELL_TRAINING_DATA = "We work with certain third parties to perform functions an
 BANKRUPT_TRAINING_DATA = "The information that is collected by Axentra is considered to be an asset. We transfer information about you if Axentra is acquired by or merged with another company. before information about you is transferred and becomes subject to a different privacy policy. We will also take reasonable steps to place a notification of such a transfer on our Web site.\nWe may choose to buy or sell assets. In these types of transactions, customer information is typically one of the business assets that is transferred. \nAlso, if we (or substantially all of our assets) are acquired, or if we go out of business, enter bankruptcy, or go through some other change of \ncontrol, Personal Information would be one of the assets transferred to or acquired by a third party. If Boilerplate, or substantially all of its \nassets were acquired, or in the unlikely event that Boilerplate goes out of business or enters bankruptcy, user information would be one of the assets \nthat is transferred or acquired by a third party. You acknowledge that such transfers may occur, and that any acquiror of Boilerplate may continue to \nuse your personal information as set forth in this policy. In the event of a change in ownership, or a merger with, acquisition by, or sale of assets \nto, another entity, we may sell or otherwise transfer all information you provide to us, including personally identifiable information, to that \nentity. Opez may sell, transfer or otherwise share some or all of its assets, including your Personal Information, in connection with a merger, \nacquisition, reorganization or sale of assets or in the event of bankruptcy.\nPageLever may sell, transfer or otherwise disclose user information, including personally identifiable information, in connection with a corporate \nmerger, consolidation, the sale of substantially all assets, or other fundamental corporate change. Quartzy may transfer, sell, or assign information \nconcerning use of the Service, including without limitation, Members' Profile Data and Professional Data, in the event of a change in business \npractices such as a merger, acquisition by another company, consolidation, liquidation, or reorganization. Science Exchange may sell, transfer or \notherwise share some or all of its assets, including your Personal Information, in connection with a merger, acquisition, reorganization or sale of \nassets or in the event of bankruptcy. We transfer information about you if Snapjoy is acquired by or merged with another company.\nbefore information about you is transferred and becomes subject to a different privacy policy. If we are involved in a merger, \nacquisition, or sale of all or a portion of our assets, your information may be transferred as part of that transaction \nchange in control or use of your Personal Information or Files, or if either \nbecome subject to a different Privacy Policy. If Fluency Forums Corporation \nshould ever file for bankruptcy or merge with another company, we may sell the information you provide to us on this Site to a third party or share \nyour Personally Identifiable Information with any company with whom we merge.\nAirbnb may sell, transfer or otherwise share some or all of its assets, including your Personal Information, in connection with a merger, acquisition, reorganization or sale of assets or in the event of bankruptcy.\nIf we are involved in a merger, acquisition, or sale of all or a portion of our assets, your information may be transferred as part of that transaction change in control or use of your Personal Information or Files, or if either become subject to a different Privacy Policy. \nBusiness Transfers.   If we are involved in a merger, acquisition, or sale of all or a portion of our assets, your information may be transferred as part of that transaction subject to a different Privacy Policy. \nIn connection with a substantial corporate transaction, such as the sale of our business, a divestiture, merger, consolidation, or asset sale, or in the unlikely event of bankruptcy.\nIf Intermarkets is merged, acquired, or sold, or in the event of a transfer of some or all of our assets, we may disclose or transfer Personally Identifiable Information and Non-Personally Identifiable Information in connection with such transaction\nBusiness Transfers: As we develop our business, we might sell or buy businesses or assets. In the event of a corporate sale, merger, reorganization, dissolution or similar event, Personal Data may be part of the transferred assets.\nIn addition, as our business changes, we may buy or sell various assets. In the event all or a portion of the assets owned or controlled by Service Provider, its parent or any subsidiary or affiliated entity are sold, assigned, transferred or acquired by another company, the information from and/or about our Website users may be among the transferred assets. \nWe may also disclose your personal information and other information you provide to another third party as part of a sale of the assets\nWhen we share personal information with third parties in connection with the sale of a business\nsubstantially all of its assets were acquired, or in the unlikely event that Automattic goes out of business or enters bankruptcy, user information would be one of the assets that is transferred or acquired by a third party.\nundergoes a business transition, such as a merger, acquisition by another company, or sale of all or a portion of its assets, We may transfer all of your information, including personal information, to the successor organization in such transition.\nwe might sell or buy additional services or business units. In such transactions, user information generally is transferred along with the rest of the service or business unit. Also, in the event that IMDb, Inc., or substantially all of its assets are acquired, user information will of course be included in the transaction.\nyour personal information is also an asset and will become part of our normal business records. As such, we may also disclose your personal information to a third party if we decide to sell a line of business to that third party, so you can continue to receive service and information in connection with that line of business with as little disruption as possible. Similarly, in the event of a merger, acquisition, reorganization, bankruptcy, or other similar event, your personal information may be transferred to successor or assign. \nIn response to a subpoena or similar investigative demand, a court order, or a request for cooperation from a law enforcement or other government agency; to establish or exercise our legal rights; to defend against legal claims; or as otherwise required by law. In such cases, we may raise or waive any legal objection or right available to us.\n\nWhen we believe disclosure is appropriate in connection with efforts to investigate, prevent, or take other action regarding illegal activity, suspected fraud or other wrongdoing; to protect and defend the rights, property or safety of our company, our users, our employees, or others; to comply with applicable law or cooperate with law enforcement; or to enforce our website terms and conditions or other agreements or policies.\n\nIn connection with a substantial corporate transaction, such as the sale of our business, a divestiture, merger, consolidation, or asset sale, or in the unlikely event of bankruptcy.\nAs we develop our business, we may buy or sell assets or business offerings. Customer, Member, transaction, email, and visitor information is generally one of the transferred business assets in these types of transactions. We may also transfer such information in the course of corporate divestitures, mergers, or dissolution.\nWe may share your information in connection with a merger between Pandora and another entity, or in the event of a transfer of all or some of our assets to another company."
 
 initializeDataStore = function() {
+    var i, l;
     dataStore = {
         words: {},
-        labels: {
-           'NOSELL': 0,
-           'SELL': 0,
-           'BANKRUPT': 0
-        }
+        labels: {}
     };
+
+    for (i=0, l=LABELS.length; i<l; i++) {
+        dataStore.labels[LABELS[i]] = 0;
+    }
+};
+
+splitWords = function(str) {
+    return str.split(/[\s\n;".,;:()<>[\]\\]+/);
+};
+
+initializeWordInDatastore = function(word) {
+    var i, l;
+    dataStore.words[word] = {};
+
+    for (i=0, l=LABELS.length; i<l; i++) {
+        dataStore.words[word][LABELS[i]] = 0;
+    }
 };
 
 train = function(data, label) {
-    var words = data.split(/[\s\n;".,;:()<>[\]\\]+/), i, l, word;
+    var words = splitWords(data), i, l, word;
 
     for (i=0, l=words.length; i<l; i++) {
         word = words[i];
 
         // initialize word.
-        dataStore.words[word] = dataStore.words[word] || {
-            'NOSELL': 0,
-            'SELL': 0,
-            'BANKRUPT': 0
-        };
+        dataStore.words[word] = dataStore.words[word] || 
+            initializeWordInDatastore(word);
 
         dataStore.words[word][label] += 1;
         dataStore.labels[label] += 1;
     }
+};
+
+getProbabilityOfWordGivenLabel = function(word, label) {
+    var count, totalOfGivenClass = dataStore.labels[label], incLabel;
+
+    count = dataStore.words[word] ?
+        dataStore.words[word][label] : 1;
+
+    if (count === 0) {
+        count = 1;
+
+        for (incLabel in dataStore.words[word]) {
+            if (dataStore.words[word].hasOwnProperty(incLabel)) {
+                dataStore.words[word][incLabel] += 1;
+            }
+        }
+    }
+
+    return count / totalOfGivenClass;
+};
+
+combineProbabilitiesIntoMAP = function(probabilities) {
+    var n = probabilities.reduce(function(runningSum, probability) {
+        return runningSum + (Math.log(1 - probability) - Math.log(probability))
+    }, 0.0);
+
+    return (1 / (1 + Math.exp(n)));
+};
+
+getProbabilityForLabel = function(label, words) {
+    var probabilities, i, l, word;
+
+    for (i=0, l=words.length; i<l; i++) {
+        word = words[i];
+        probabilities.push(getProbabilityOfWordGivenLabel(word, label));
+    }
+
+    return combineProbabilitiesIntoMAP(probabilities);
+};
+
+maxLabelIndex = function(arr) {
+    var maxIndex=0, i, l;
+
+    for (i=0, l=arr.length; i<l; i++) {
+        if (arr[i] > arr[maxIndes]) maxIndex = i;
+    }
+
+    return maxIndex;
+};
+
+classify = function(data) {
+    var words = splitWords(data), scores=[], i, l;
+
+    for (i=0, l=LABELS.length; i<l; i++) {
+        scores[i] = getProbabilityForLabel(LABELS[i], words);
+    }
+
+    return LABELS[maxLabelIndex(scores)];
 };
 
 // Event handler for chrome requests.
