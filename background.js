@@ -109,12 +109,21 @@ classify = function(data) {
     return LABELS[maxLabelIndex(scores)];
 };
 
+// run initialization;
+(function() {
+    initializeDataStore();
+    train(NOSELL_TRAINING_DATA, LABELS[0]);
+    train(SELL_TRAINING_DATA, LABELS[1]);
+    train(BANKRUPT_TRAINING_DATA, LABELS[2]);
+})();
+
 // Event handler for chrome requests.
 onRequest = function(request, sender, sendResponse) {
-    var tabID = sender.tab.id;
+    var tabID = sender.tab.id,
+        classification = classify(request.bodyText);
 
     // regular expression test is simply a placeholder for classification.
-    if (/privacy/.test(request.bodyText)) {
+    if (classification === 'NOSELL') {
         chrome.pageAction.setIcon({path: "green.png", tabId: tabID});
         chrome.pageAction.setTitle({title: "This site can't sell your info.", 
                 tabId: tabID});
