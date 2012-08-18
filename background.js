@@ -1,7 +1,8 @@
 var dataStore, NOSELL_TRAINING_DATA, SELL_TRAINING_DATA, BANKRUPT_TRAINING_DATA,
     initializeDataStore, onRequest, train, classify, splitWords, LABELS,
-    initializeWordInDatastore, getProbabilityForLabel, maxLabelIndex,
-    getProbabilityOfWordGivenLabel, combineProbabilitiesIntoMAP, processWord, finalScores;
+    initializeWordInDatastore, getProbabilityOfLabelGivenWords, maxLabelIndex,
+    getProbabilityOfWordGivenLabel, processWord,
+    getProbabilityOfLabel, finalScores;
 
 LABELS = ['NOSELL', 'SELL', 'BANKRUPT'];
 
@@ -15,7 +16,8 @@ initializeDataStore = function() {
     var i, l;
     dataStore = {
         words: {},
-        labels: {}
+        labels: {},
+        labelUseCount: 0
     };
 
     for (i=0, l=LABELS.length; i<l; i++) {
@@ -59,40 +61,26 @@ train = function(data, label) {
 
             dataStore.words[segment][label] += 1;
             dataStore.labels[label] += 1;
+            dataStore.labelUseCount += 1;
         }
     }
 };
 
+getProbabilityOfLabel = function(label) {
+    return dataStore.labels[label] / dataStore.labelUseCount;
+};
+
 getProbabilityOfWordGivenLabel = function(word, label) {
-    var count, totalOfGivenClass = dataStore.labels[label], incLabel;
+    var count, totalOfGivenClass = dataStore.labels[label];
 
     count = dataStore.words[word] ?
-        dataStore.words[word][label] : 1;
-
-    if (count === 0) {
-        count = 1;
-
-        for (incLabel in dataStore.words[word]) {
-            if (dataStore.words[word].hasOwnProperty(incLabel)) {
-                dataStore.words[word][incLabel] += 1;
-            }
-        }
-    }
+        dataStore.words[word][label] : 0;
 
     return count / totalOfGivenClass;
 };
 
-combineProbabilitiesIntoMAP = function(probabilities) {
-    var n = probabilities.reduce(function(runningSum, probability) {
-        return runningSum + (Math.log(1 - probability) - Math.log(probability))
-    }, 0.0);
-
-    finalScores = probabilities;
-    return (1 / (1 + Math.exp(n)));
-};
-
-getProbabilityForLabel = function(label, words) {
-    var probabilities=[], i, l, word, word1='', word2='', word3='', segment;
+getProbabilityOfLabelGivenWords = function(label, words) {
+    var probability=0, i, l, word, word1='', word2='', word3='', segment;
 
     for (i=0, l=words.length; i<l; i++) {
         word = processWord(words[i]);
@@ -103,11 +91,13 @@ getProbabilityForLabel = function(label, words) {
             word1 = word;
             segment = word3 + ' ' + word2 + ' ' + word1;
 
-            probabilities.push(getProbabilityOfWordGivenLabel(segment, label));
+            probability += Math.log(getProbabilityOfWordGivenLabel(segment, label));
         }
     }
 
-    return combineProbabilitiesIntoMAP(probabilities);
+    probability += Math.log(getProbabilityOfLabel(label));
+
+    return probability;
 };
 
 maxLabelIndex = function(arr) {
@@ -121,12 +111,29 @@ maxLabelIndex = function(arr) {
 };
 
 classify = function(data) {
-    var words = splitWords(data), scores=[], i, l;
+    var words = splitWords(data), scores=[], i, l, probSum=0, matchesProbLabel=true,
+        ratio;
 
     for (i=0, l=LABELS.length; i<l; i++) {
-        scores[i] = getProbabilityForLabel(LABELS[i], words);
+        scores[i] = getProbabilityOfLabelGivenWords(LABELS[i], words);
+        probSum += scores[i];
     }
 
+    // normalize
+    for (i=0; i<l; i++) {
+        scores[i] = (1 / (1 + Math.exp(probSum - (2 * scores[i]))));
+        ratio = scores[i] / getProbabilityOfLabel(LABELS[i]);
+        if (ratio < 0.95 || ratio > 1.05) matchesProbLabel = false;
+    }
+
+    if (matchesProbLabel) {
+        for (i=0; i<l; i++) {
+            scores[i] = 0;
+        }
+        finalScores = 'nulled';
+    } else {
+        finalScores = scores;
+    }
     return LABELS[maxLabelIndex(scores)];
 };
 
