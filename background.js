@@ -1,7 +1,7 @@
 var dataStore, NOSELL_TRAINING_DATA, SELL_TRAINING_DATA, BANKRUPT_TRAINING_DATA,
     initializeDataStore, onRequest, train, classify, splitWords, LABELS,
     initializeWordInDatastore, getProbabilityForLabel, maxLabelIndex,
-    getProbabilityOfWordGivenLabel, combineProbabilitiesIntoMAP, processWord;
+    getProbabilityOfWordGivenLabel, combineProbabilitiesIntoMAP, processWord, finalScores;
 
 LABELS = ['NOSELL', 'SELL', 'BANKRUPT'];
 
@@ -29,24 +29,7 @@ splitWords = function(str) {
 
 processWord = function(word) {
     word = word.toLowerCase();
-    switch(word) {
-        case 'the':
-        case 'a':
-        case 'to':
-        case 'we':
-        case 'but':
-        case 'not':
-        case 'if':
-        case 'it':
-        case 'or':
-        case 'of':
-        case 'are':
-        case 'in':
-        case 'that':
-        case 'about':
-        case 'us':
-            return null;
-    }
+    word = word.length > 3 ? word : null;
     return word;
 };
 
@@ -60,16 +43,21 @@ initializeWordInDatastore = function(word) {
 };
 
 train = function(data, label) {
-    var words = splitWords(data), i, l, word;
+    var words = splitWords(data), i, l, word, word1='', word2='', word3='', segment;
 
     for (i=0, l=words.length; i<l; i++) {
         word = processWord(words[i]);
 
         if (word) {
-            // initialize word.
-            if (!dataStore.words[word]) initializeWordInDatastore(word);
+            word3 = word2;
+            word2 = word1;
+            word1 = word;
+            segment = word3 + ' ' + word2 + ' ' + word1;
 
-            dataStore.words[word][label] += 1;
+            // initialize word.
+            if (!dataStore.words[segment]) initializeWordInDatastore(segment);
+
+            dataStore.words[segment][label] += 1;
             dataStore.labels[label] += 1;
         }
     }
@@ -99,15 +87,24 @@ combineProbabilitiesIntoMAP = function(probabilities) {
         return runningSum + (Math.log(1 - probability) - Math.log(probability))
     }, 0.0);
 
+    finalScores = probabilities;
     return (1 / (1 + Math.exp(n)));
 };
 
 getProbabilityForLabel = function(label, words) {
-    var probabilities=[], i, l, word;
+    var probabilities=[], i, l, word, word1='', word2='', word3='', segment;
 
     for (i=0, l=words.length; i<l; i++) {
         word = processWord(words[i]);
-        probabilities.push(getProbabilityOfWordGivenLabel(word, label));
+
+        if (word) {
+            word3 = word2;
+            word2 = word1;
+            word1 = word;
+            segment = word3 + ' ' + word2 + ' ' + word1;
+
+            probabilities.push(getProbabilityOfWordGivenLabel(segment, label));
+        }
     }
 
     return combineProbabilitiesIntoMAP(probabilities);
@@ -166,7 +163,7 @@ onMessage = function(request, sender, sendResponse) {
     chrome.pageAction.show(tabID);
 
     // Return nothing to let the connection be cleaned up.
-    sendResponse({classification: classification});
+    sendResponse({classification: classification, scores: finalScores});
 };
 
 // Listen for the content script to send a message to the background page.
