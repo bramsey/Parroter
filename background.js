@@ -1,7 +1,7 @@
 var dataStore, NOSELL_TRAINING_DATA, SELL_TRAINING_DATA, BANKRUPT_TRAINING_DATA,
     initializeDataStore, onRequest, train, classify, splitWords, LABELS,
     initializeWordInDatastore, getProbabilityForLabel, maxLabelIndex,
-    getProbabilityOfWordGivenLabel, combineProbabilitiesIntoMAP;
+    getProbabilityOfWordGivenLabel, combineProbabilitiesIntoMAP, processWord;
 
 LABELS = ['NOSELL', 'SELL', 'BANKRUPT'];
 
@@ -27,6 +27,29 @@ splitWords = function(str) {
     return str.split(/[\s\n;".,;:()<>[\]\\]+/);
 };
 
+processWord = function(word) {
+    word = word.toLowerCase();
+    switch(word) {
+        case 'the':
+        case 'a':
+        case 'to':
+        case 'we':
+        case 'but':
+        case 'not':
+        case 'if':
+        case 'it':
+        case 'or':
+        case 'of':
+        case 'are':
+        case 'in':
+        case 'that':
+        case 'about':
+        case 'us':
+            return null;
+    }
+    return word;
+};
+
 initializeWordInDatastore = function(word) {
     var i, l;
     dataStore.words[word] = {};
@@ -40,13 +63,15 @@ train = function(data, label) {
     var words = splitWords(data), i, l, word;
 
     for (i=0, l=words.length; i<l; i++) {
-        word = words[i];
+        word = processWord(words[i]);
 
-        // initialize word.
-        if (!dataStore.words[word]) initializeWordInDatastore(word);
+        if (word) {
+            // initialize word.
+            if (!dataStore.words[word]) initializeWordInDatastore(word);
 
-        dataStore.words[word][label] += 1;
-        dataStore.labels[label] += 1;
+            dataStore.words[word][label] += 1;
+            dataStore.labels[label] += 1;
+        }
     }
 };
 
@@ -81,7 +106,7 @@ getProbabilityForLabel = function(label, words) {
     var probabilities=[], i, l, word;
 
     for (i=0, l=words.length; i<l; i++) {
-        word = words[i];
+        word = processWord(words[i]);
         probabilities.push(getProbabilityOfWordGivenLabel(word, label));
     }
 
