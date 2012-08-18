@@ -43,8 +43,7 @@ train = function(data, label) {
         word = words[i];
 
         // initialize word.
-        dataStore.words[word] = dataStore.words[word] || 
-            initializeWordInDatastore(word);
+        if (!dataStore.words[word]) initializeWordInDatastore(word);
 
         dataStore.words[word][label] += 1;
         dataStore.labels[label] += 1;
@@ -79,7 +78,7 @@ combineProbabilitiesIntoMAP = function(probabilities) {
 };
 
 getProbabilityForLabel = function(label, words) {
-    var probabilities, i, l, word;
+    var probabilities=[], i, l, word;
 
     for (i=0, l=words.length; i<l; i++) {
         word = words[i];
@@ -93,7 +92,7 @@ maxLabelIndex = function(arr) {
     var maxIndex=0, i, l;
 
     for (i=0, l=arr.length; i<l; i++) {
-        if (arr[i] > arr[maxIndes]) maxIndex = i;
+        if (arr[i] > arr[maxIndex]) maxIndex = i;
     }
 
     return maxIndex;
@@ -127,6 +126,12 @@ onMessage = function(request, sender, sendResponse) {
         chrome.pageAction.setIcon({path: "green.png", tabId: tabID});
         chrome.pageAction.setTitle({title: "This site can't sell your info.", 
                 tabId: tabID});
+    } else if (classification === 'BANKRUPT') {
+        chrome.pageAction.setIcon({path: "yellow.png", tabId: tabID});
+        chrome.pageAction.setTitle({
+            title: "This site can sell your info if bankrupt.", 
+            tabId: tabID
+        });
     } else {
         chrome.pageAction.setIcon({path: "red.png", tabId: tabID});
         chrome.pageAction.setTitle({title: "This site can sell your info :(",
