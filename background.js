@@ -45,28 +45,30 @@ initializeWordInDatastore = function(word) {
 };
 
 var setWordProbabilities = function() {
-    var sumProb;
+    var sumProb, word;
 
-    dataStore.words.forEach(function(word) {
-        sumProb = 0.0;
-        // set prob = count / total words for label
-        LABELS.forEach(function(label) {
-            word[label].prob = Math.min(1,
-                word[label].count / dataStore.labels[label]);
-            sumProb += word[label].prob;
-        });
-        // set prob = prob / combined prob
-        LABELS.forEach(function(label) {
-            word[label].prob = Math.max(0.01,
-                Math.min(0.99, word[label].prob / sumProb));
-        });
-    });
+    for (var key in dataStore.words) {
+        if (dataStore.words.hasOwnProperty(key)) {
+            word = dataStore.words[key];
+            sumProb = 0.0;
+            // set prob = count / total words for label
+            LABELS.forEach(function(label) {
+                word[label].prob = Math.min(1,
+                    word[label].count / dataStore.labels[label]);
+                sumProb += word[label].prob;
+            });
+            // set prob = prob / combined prob
+            LABELS.forEach(function(label) {
+                word[label].prob = Math.max(0.01,
+                    Math.min(0.99, word[label].prob / sumProb));
+            });
+        }
+    }
 };
 
 train = function(data, label) {
     var words = splitWords(data), i, l, word, word1='', word2='', word3='', segment;
 
-    dataStore.labels[label] = data.split(/\n/).length;
     for (i=0, l=words.length; i<l; i++) {
         word = processWord(words[i]);
 
@@ -77,9 +79,10 @@ train = function(data, label) {
             segment = word3 + ' ' + word2 + ' ' + word1;
 
             // initialize word.
-            if (!dataStore.words[segment]) initializeWordInDatastore(segment);
+            if (!dataStore.words[word]) initializeWordInDatastore(word);
 
-            dataStore.words[segment][label] += 1;
+            dataStore.words[word][label].count += 1;
+            dataStore.labels[label] += 1;
             dataStore.labelUseCount += 1;
         }
     }
@@ -133,11 +136,12 @@ classify = function(data) {
     var words = splitWords(data), scores=[], i, l, probSum=0, matchesProbLabel=true,
         ratio;
 
+    setWordProbabilities();
     for (i=0, l=LABELS.length; i<l; i++) {
         scores[i] = getProbabilityOfLabelGivenWords(LABELS[i], words);
         probSum += scores[i];
     }
-    finalScores = scores;
+    finalScores = dataStore;
 
     // normalize
     for (i=0; i<l; i++) {
