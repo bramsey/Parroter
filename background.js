@@ -31,7 +31,7 @@ splitWords = function(str) {
 
 processWord = function(word) {
     word = word.toLowerCase();
-    word = word.length > 3 ? word : null;
+    //word = word.length > 3 ? word : null;
     return word;
 };
 
@@ -40,13 +40,33 @@ initializeWordInDatastore = function(word) {
     dataStore.words[word] = {};
 
     for (i=0, l=LABELS.length; i<l; i++) {
-        dataStore.words[word][LABELS[i]] = 0;
+        dataStore.words[word][LABELS[i]] = {count: 0, prob: 0.3};
     }
+};
+
+var setWordProbabilities = function() {
+    var sumProb;
+
+    dataStore.words.forEach(function(word) {
+        sumProb = 0.0;
+        // set prob = count / total words for label
+        LABELS.forEach(function(label) {
+            word[label].prob = Math.min(1,
+                word[label].count / dataStore.labels[label]);
+            sumProb += word[label].prob;
+        });
+        // set prob = prob / combined prob
+        LABELS.forEach(function(label) {
+            word[label].prob = Math.max(0.01,
+                Math.min(0.99, word[label].prob / sumProb));
+        });
+    });
 };
 
 train = function(data, label) {
     var words = splitWords(data), i, l, word, word1='', word2='', word3='', segment;
 
+    dataStore.labels[label] = data.split(/\n/).length;
     for (i=0, l=words.length; i<l; i++) {
         word = processWord(words[i]);
 
@@ -60,7 +80,6 @@ train = function(data, label) {
             if (!dataStore.words[segment]) initializeWordInDatastore(segment);
 
             dataStore.words[segment][label] += 1;
-            dataStore.labels[label] += 1;
             dataStore.labelUseCount += 1;
         }
     }
@@ -118,6 +137,7 @@ classify = function(data) {
         scores[i] = getProbabilityOfLabelGivenWords(LABELS[i], words);
         probSum += scores[i];
     }
+    finalScores = scores;
 
     // normalize
     for (i=0; i<l; i++) {
@@ -130,9 +150,6 @@ classify = function(data) {
         for (i=0; i<l; i++) {
             scores[i] = 0;
         }
-        finalScores = 'nulled';
-    } else {
-        finalScores = scores;
     }
     return LABELS[maxLabelIndex(scores)];
 };
