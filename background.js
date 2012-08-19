@@ -45,39 +45,38 @@ initializeWordInDatastore = function(word) {
 };
 
 var setWordProbabilities = function() {
-    var sumProb, word;
+    var sumProb, sumCounts, word;
 
     for (var key in dataStore.words) {
         if (dataStore.words.hasOwnProperty(key)) {
             word = dataStore.words[key];
             sumProb = 0.0;
+            sumCounts = 0;
             // set prob = count / total words for label
             LABELS.forEach(function(label) {
                 word[label].prob = Math.min(1,
                     word[label].count / dataStore.labels[label]);
                 sumProb += word[label].prob;
+                sumCounts += word[label].count;
             });
             // set prob = prob / combined prob
             LABELS.forEach(function(label) {
-                word[label].prob = Math.max(0.01,
-                    Math.min(0.99, word[label].prob / sumProb));
+                // zero-out prob if total occurrences < 5
+                word[label].prob = sumCounts > 4 ?
+                    Math.max(0.01, Math.min(0.99, word[label].prob / sumProb)) :
+                    0;
             });
         }
     }
 };
 
 train = function(data, label) {
-    var words = splitWords(data), i, l, word, word1='', word2='', word3='', segment;
+    var words = splitWords(data), i, l, word;
 
     for (i=0, l=words.length; i<l; i++) {
         word = processWord(words[i]);
 
         if (word) {
-            word3 = word2;
-            word2 = word1;
-            word1 = word;
-            segment = word3 + ' ' + word2 + ' ' + word1;
-
             // initialize word.
             if (!dataStore.words[word]) initializeWordInDatastore(word);
 
