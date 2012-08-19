@@ -1,8 +1,6 @@
 var dataStore, NOSELL_TRAINING_DATA, SELL_TRAINING_DATA, BANKRUPT_TRAINING_DATA,
     initializeDataStore, onRequest, train, classify, splitWords, LABELS,
-    initializeWordInDatastore, getProbabilityOfLabelGivenWords, maxLabelIndex,
-    getProbabilityOfWordGivenLabel, processWord,
-    getProbabilityOfLabel, finalScores;
+    initializeWordInDatastore, maxLabelIndex, processWord, finalScores;
 
 LABELS = ['NOSELL', 'SELL', 'BANKRUPT'];
 
@@ -62,8 +60,8 @@ var setWordProbabilities = function() {
             // set prob = prob / combined prob
             LABELS.forEach(function(label) {
                 // zero-out prob if total occurrences < 5
-                word[label].prob = sumCounts > 4 ?
-                    Math.max(0.01, Math.min(0.99, word[label].prob / sumProb)) :
+                word[label].prob = sumCounts > 1 ?
+                    Math.max(0.01, Math.min(0.98, word[label].prob / sumProb)) :
                     0;
             });
         }
@@ -87,40 +85,6 @@ train = function(data, label) {
     }
 };
 
-getProbabilityOfLabel = function(label) {
-    return dataStore.labels[label] / dataStore.labelUseCount;
-};
-
-getProbabilityOfWordGivenLabel = function(word, label) {
-    var count, totalOfGivenClass = dataStore.labels[label];
-
-    count = dataStore.words[word] ?
-        dataStore.words[word][label] : 0;
-
-    return count / totalOfGivenClass;
-};
-
-getProbabilityOfLabelGivenWords = function(label, words) {
-    var probability=0, i, l, word, word1='', word2='', word3='', segment;
-
-    for (i=0, l=words.length; i<l; i++) {
-        word = processWord(words[i]);
-
-        if (word) {
-            word3 = word2;
-            word2 = word1;
-            word1 = word;
-            segment = word3 + ' ' + word2 + ' ' + word1;
-
-            probability += Math.log(getProbabilityOfWordGivenLabel(segment, label));
-        }
-    }
-
-    probability += Math.log(getProbabilityOfLabel(label));
-
-    return probability;
-};
-
 maxLabelIndex = function(arr) {
     var maxIndex=0, i, l;
 
@@ -131,30 +95,63 @@ maxLabelIndex = function(arr) {
     return maxIndex;
 };
 
-classify = function(data) {
-    var words = splitWords(data), scores=[], i, l, probSum=0, matchesProbLabel=true,
-        ratio;
+var mostInterestingProb = function(word) {
+    var most = 0, interestingness, prob;
+    LABELS.forEach(function(label) {
+        prob = word[label].prob;
+        if (prob === 0) return;
 
-    setWordProbabilities();
-    for (i=0, l=LABELS.length; i<l; i++) {
-        scores[i] = getProbabilityOfLabelGivenWords(LABELS[i], words);
-        probSum += scores[i];
-    }
-    finalScores = dataStore;
+        interestingness = Math.abs(prob - 0.33);
+        if (interestingness > most) most = interestingness;
+    });
+    return most;
+};
 
-    // normalize
-    for (i=0; i<l; i++) {
-        scores[i] = (1 / (1 + Math.exp(probSum - (2 * scores[i]))));
-        ratio = scores[i] / getProbabilityOfLabel(LABELS[i]);
-        if (ratio < 0.95 || ratio > 1.05) matchesProbLabel = false;
-    }
+var calcInterestingness = function(word) {
+    return dataStore.words[word] ?
+        mostInterestingProb(dataStore.words[word]) : 0.01;
+};
 
-    if (matchesProbLabel) {
-        for (i=0; i<l; i++) {
-            scores[i] = 0;
+var indexOfHighest = function(arr) {
+    var maxIndex=0, highest=0, i, l;
+
+    for (i=0, l=arr.length; i<l; i++) {
+        if (arr[i] > highest) {
+            highest = arr[i];
+            maxIndex = i;
         }
     }
-    return LABELS[maxLabelIndex(scores)];
+
+    return maxIndex;
+};
+
+var getInterestingWords = function(words) {
+    var interestScores, interestingWords=[], swapHolder, i, l, highIndex;
+
+    interestScores = words.map(function(word) {
+        return {word: word, score: calcInterestingness(word)};
+    });
+ 
+    for (i=0, l=interestScores.length; i<15 && i<l; i++) {
+        highIndex = indexOfHighest(interestScores);
+        swapHolder = interestScores[l-1];
+        interestScores[l-1] = interestScores[highIndex];
+        interestScores[highIndex] = swapHolder;
+        interestingWords.push(interestScores.pop());
+        l = interestScores.length;
+    }
+
+    return interestingWords;
+};
+
+classify = function(data) {
+    var words = getInterestingWords(splitWords(data)),
+        scores=[], i, l, probSum=0, matchesProbLabel=true, ratio;
+
+    finalScores = words;
+
+    //return LABELS[maxLabelIndex(scores)];
+    return LABELS[0];
 };
 
 // run initialization;
@@ -163,6 +160,7 @@ classify = function(data) {
     train(NOSELL_TRAINING_DATA, LABELS[0]);
     train(SELL_TRAINING_DATA, LABELS[1]);
     train(BANKRUPT_TRAINING_DATA, LABELS[2]);
+    setWordProbabilities();
 })();
 
 // Event handler for chrome requests.
