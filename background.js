@@ -95,23 +95,6 @@ maxLabelIndex = function(arr) {
     return maxIndex;
 };
 
-var mostInterestingProb = function(word) {
-    var most = 0, interestingness, prob;
-    LABELS.forEach(function(label) {
-        prob = word[label].prob;
-        if (prob === 0) return;
-
-        interestingness = Math.abs(prob - 0.33);
-        if (interestingness > most) most = interestingness;
-    });
-    return most;
-};
-
-var calcInterestingness = function(word) {
-    return dataStore.words[word] ?
-        mostInterestingProb(dataStore.words[word]) : 0.01;
-};
-
 var indexOfHighest = function(arr) {
     var maxIndex=0, highest=0, i, l;
 
@@ -125,14 +108,21 @@ var indexOfHighest = function(arr) {
     return maxIndex;
 };
 
-var getInterestingWords = function(words) {
+var getInterestingWords = function(words, label) {
     var interestScores, interestingWords=[], swapHolder, i, l, highIndex,
-        seen = {}, count=0;
+        seen = {}, count=0, prob;
 
     interestScores = words.map(function(word) {
-        if (seen[word]) return {word: word, score: 0};
+        word = processWord(word);
+        if (seen[word]) return {word: word, prob: 0, score: 0};
         seen[word] = true;
-        return {word: word, score: calcInterestingness(processWord(word))};
+        prob = dataStore.words[word] ?
+            dataStore.words[word][label].prob : 0;
+        return {
+            word: word,
+            prob: prob,
+            score: prob > 0 ? Math.abs(prob - 0.33) : 0
+        };
     });
  
     for (i=0, l=interestScores.length; count<15 && i<l; i++) {
@@ -149,13 +139,20 @@ var getInterestingWords = function(words) {
 };
 
 classify = function(data) {
-    var words = getInterestingWords(splitWords(data)),
+    var words = splitWords(data), interesting,
         scores=[], i, l, probSum=0, matchesProbLabel=true, ratio;
 
-    finalScores = words;
+    LABELS.forEach(function(label, index) {
+        interesting = getInterestingWords(words, label);
+        scores[index] = interesting.map(function(word) {
+            return word.prob;
+        }).reduce(function(result, ele) {
+            return result * ele;
+        });
+    });
+    finalScores = scores;
 
-    //return LABELS[maxLabelIndex(scores)];
-    return LABELS[0];
+    return LABELS[maxLabelIndex(scores)];
 };
 
 // run initialization;
