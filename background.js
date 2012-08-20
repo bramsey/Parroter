@@ -60,7 +60,7 @@ var setWordProbabilities = function() {
             // set prob = prob / combined prob
             LABELS.forEach(function(label) {
                 // zero-out prob if total occurrences < 5
-                word[label].prob = sumCounts > 0 ?
+                word[label].prob = sumCounts > 4 ?
                     Math.max(0.01, Math.min(0.98, word[label].prob / sumProb)) :
                     0;
             });
@@ -150,6 +150,14 @@ classify = function(data) {
             return result * ele;
         });
     });
+    var results = [];
+    for (var key in dataStore.words) {
+        if (dataStore.words.hasOwnProperty(key)) {
+            results.push([dataStore.words[key]['NOSELL'].prob,
+                    dataStore.words[key]['SELL'].prob,
+                    dataStore.words[key][LABELS[2]].prob]);
+        }
+    }
     finalScores = scores;
 
     return LABELS[maxLabelIndex(scores)];
