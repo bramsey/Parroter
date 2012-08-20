@@ -174,7 +174,7 @@ classify = function(data) {
                     dataStore.words[key][LABELS[2]].prob]);
         }
     }
-    finalScores = interestings;
+    finalScores = [interestings, scores];
 
     return LABELS[maxLabelIndex(scores)];
 };
