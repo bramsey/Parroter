@@ -60,7 +60,7 @@ var setWordProbabilities = function() {
             // set prob = prob / combined prob
             LABELS.forEach(function(label) {
                 // zero-out prob if total occurrences < 5
-                word[label].prob = sumCounts > 1 ?
+                word[label].prob = sumCounts > 0 ?
                     Math.max(0.01, Math.min(0.98, word[label].prob / sumProb)) :
                     0;
             });
@@ -116,8 +116,8 @@ var indexOfHighest = function(arr) {
     var maxIndex=0, highest=0, i, l;
 
     for (i=0, l=arr.length; i<l; i++) {
-        if (arr[i] > highest) {
-            highest = arr[i];
+        if (arr[i].score > highest) {
+            highest = arr[i].score;
             maxIndex = i;
         }
     }
@@ -126,19 +126,23 @@ var indexOfHighest = function(arr) {
 };
 
 var getInterestingWords = function(words) {
-    var interestScores, interestingWords=[], swapHolder, i, l, highIndex;
+    var interestScores, interestingWords=[], swapHolder, i, l, highIndex,
+        seen = {}, count=0;
 
     interestScores = words.map(function(word) {
-        return {word: word, score: calcInterestingness(word)};
+        if (seen[word]) return {word: word, score: 0};
+        seen[word] = true;
+        return {word: word, score: calcInterestingness(processWord(word))};
     });
  
-    for (i=0, l=interestScores.length; i<15 && i<l; i++) {
+    for (i=0, l=interestScores.length; count<15 && i<l; i++) {
         highIndex = indexOfHighest(interestScores);
         swapHolder = interestScores[l-1];
         interestScores[l-1] = interestScores[highIndex];
         interestScores[highIndex] = swapHolder;
         interestingWords.push(interestScores.pop());
         l = interestScores.length;
+        count +=1;
     }
 
     return interestingWords;
